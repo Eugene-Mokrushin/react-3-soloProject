@@ -9,6 +9,7 @@ let timerInterval
 
 function App() {
   const [dices, setDices] = React.useState(allNewDice())
+  const [bestTime, setBestTime] = React.useState(localStorage.getItem('best-time') || 0)
   const [timer, setTimer] = React.useState(0)
   const [numberOfRolls, setNumberOfRolls] = React.useState(0)
   const [tenzies, setTenzies] = React.useState(false)
@@ -20,6 +21,10 @@ function App() {
     if (allHeld && allSameValue) {
       setTenzies(true)
       clearInterval(timerInterval)
+      if (timer < bestTime || bestTime === 0 ) {
+        localStorage.setItem('best-time', timer)
+        setBestTime(timer)
+      }
     }
   }, [dices])
 
@@ -61,13 +66,13 @@ function App() {
       setDices(allNewDice())
       setNumberOfRolls(0)
       setTimer(0)
-    } else { 
+    } else {
+      startTimer()
       setDices(prevState => prevState.map(die => {
         return die.isHeld ? die : createNewDice()
       }))
       setNumberOfRolls(prevState => prevState + 1)
     }
-
 
   }
 
@@ -96,7 +101,10 @@ function App() {
         <div className="btn-wrapper">
           <span className='num-roll'>Roll: {numberOfRolls} </span>
           <button className="roll-btn" onClick={rollDices}>{tenzies ? "New Game" : 'Roll'}</button>
-          <span className='time-win'>Time: {timer / 1000}</span>
+          <div className="time">
+            <span className='time-win'>Time: {timer / 1000}</span>
+            <span className='best'>Best time: {bestTime / 1000}</span>
+          </div>
         </div>
       </main>
       {tenzies && <Confetti />}
