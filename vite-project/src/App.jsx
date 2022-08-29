@@ -1,94 +1,84 @@
 import React from 'react'
-import Dice from './components/Dice'
+import Die from './components/Die'
+import Confetti from 'react-confetti'
 import { nanoid } from "nanoid"
 import './dist/css/index.css'
 
 const numberOfDices = 10;
-
+let timerInterval
 
 function App() {
-  const [dices, setDices] = React.useState([])
-
-  const [round, setRound] = React.useState(0)
-
-  React.useEffect(() => {
-    localStorage.setItem('dices', JSON.stringify(dices))
-    console.log(round)
-  }, [round])
+  const [dices, setDices] = React.useState(allNewDice())
+  const [timer, setTimer] = React.useState(0)
+  const [numberOfRolls, setNumberOfRolls] = React.useState(0)
+  const [tenzies, setTenzies] = React.useState(false)
 
   React.useEffect(() => {
-    if (JSON.parse(localStorage.getItem('dices')).length === 0) {
-      setDices(prevState => {
-        const newDices = []
-        for (let index = 0; index != numberOfDices; index++) {
-          newDices.push(createNewDice())
-        }
-
-        return newDices
-      })
-    } else {
-      setDices(JSON.parse(localStorage.getItem('dices')))
+    const allHeld = dices.every(die => die.isHeld)
+    const firstValue = dices[0].value
+    const allSameValue = dices.every(die => die.value === firstValue)
+    if (allHeld && allSameValue) {
+      setTenzies(true)
+      clearInterval(timerInterval)
     }
-  }, [])
+  }, [dices])
+
+
+  function allNewDice() {
+    let newDice = []
+    for (let index = 0; index < numberOfDices; index++) {
+      newDice.push(createNewDice())
+    }
+    return newDice
+  }
 
   function createNewDice() {
     return {
       id: nanoid(),
       number: Math.floor(1 + Math.random() * (6)),
-      saved: false
+      isHeld: false
     }
   }
 
-  function setSave(id) {
-    setDices(prevState => {
-      const dices = []
-      prevState.forEach(dice => {
-        let sample;
-        if (dice.id === id) {
-          sample = {
-            ...dice,
-            saved: !dice.saved
-          }
-        } else {
-          sample = dice
-        }
-        dices.push(sample)
-      });
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      setTimer(prevState => prevState + 100)
+    }, 100);
+  }
 
-      return dices
-    })
+  function holdDice(id) {
+    timer === 0 ? startTimer() : null
+    setDices(prevState => prevState.map(die => {
+      return die.id === id ?
+        { ...die, isHeld: !die.isHeld } :
+        die
+    }))
   }
 
   function rollDices() {
-    const newDices = []
+    if (tenzies) {
+      setTenzies(false)
+      setDices(allNewDice())
+      setNumberOfRolls(0)
+      setTimer(0)
+    } else { 
+      setDices(prevState => prevState.map(die => {
+        return die.isHeld ? die : createNewDice()
+      }))
+      setNumberOfRolls(prevState => prevState + 1)
+    }
 
-    dices.forEach(dice => {
-      if (dice.saved) {
-        newDices.push(dice)
-      } else {
-        const newNumDice = {
-          ...dice,
-          number: Math.floor(1 + Math.random() * (6))
-        }
-        newDices.push(newNumDice)
-      }
-    });
-    setRound(prevState => prevState + 1)
-    setDices(newDices)
+
   }
-
-
-
 
 
   const allDices = dices.map(dice => {
     return (
-      <Dice
+      <Die
         key={dice.id}
-        id={dice.id}
         number={dice.number}
-        saved={dice.saved}
-        handleSave={setSave}
+        isHeld={dice.isHeld}
+        holdDice={() => holdDice(dice.id)}
       />
     )
   })
@@ -103,8 +93,13 @@ function App() {
         <div className="dices">
           {allDices}
         </div>
-        <button className="roll-btn" onClick={rollDices}>Roll</button>
+        <div className="btn-wrapper">
+          <span className='num-roll'>Roll: {numberOfRolls} </span>
+          <button className="roll-btn" onClick={rollDices}>{tenzies ? "New Game" : 'Roll'}</button>
+          <span className='time-win'>Time: {timer / 1000}</span>
+        </div>
       </main>
+      {tenzies && <Confetti />}
     </div>
   )
 }
