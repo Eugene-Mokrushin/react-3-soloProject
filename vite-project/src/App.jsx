@@ -92,7 +92,7 @@ function App() {
 
   return (
     <div className="container">
-      <main>
+      <main style={{width: "420px"}}>
         <h1 className="title">Tenzies</h1>
         <p className="descriprtion">Roll until all dice are the same. Click each die to freeze it at its current value between rolls.</p>
         <div className="dices">
